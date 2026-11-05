@@ -67,13 +67,12 @@ namespace POS.API.Controllers
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateCategory(int id, CategoryViewModel category)
         {
-            var cat = await _db.Categories.AsNoTracking().FirstOrDefaultAsync(x => x.CatId == id);
+            var cat = await _db.Categories.FirstOrDefaultAsync(x => x.CatId == id);
             if(cat is null)
             {
                 return NotFound();
             }
             cat.CatName = category.CatName;
-            _db.Entry(cat).State = EntityState.Modified;
             await _db.SaveChangesAsync();
             return Ok(category);
         }
