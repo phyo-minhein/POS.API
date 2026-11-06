@@ -1,8 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
+using POS.API.Services;
 using POS.API.ViewModels;
-using POS.Data;
-using POS.Models;
 
 namespace POS.API.Controllers
 {
@@ -10,38 +8,24 @@ namespace POS.API.Controllers
     [Route("api/[controller]")]
     public class CategoryController : Controller
     {
-        private readonly AppDbContext _db;
+        private readonly CategoryService _categoryService;
 
-        public CategoryController(AppDbContext db)
+        public CategoryController(CategoryService categoryService)
         {
-            _db = db;
+            _categoryService = categoryService;
         }
 
         [HttpGet]
         public async Task<IActionResult> GetCategoriesAsync()
         {
-            var list = await _db.Categories.AsNoTracking()
-                                .Select(x => new CategoryViewModel
-                                {
-                                    CatId = x.CatId,
-                                    CatName = x.CatName
-                                })
-                                .ToListAsync();
+            var list = await _categoryService.GetCategoriesAsync();
             return Ok(list);
         }
 
         [HttpGet("{id}", Name = "GetCategoryById")]
         public async Task<IActionResult> GetCategoryAsync(int id)
         {
-            var cat = await _db.Categories
-                .AsNoTracking()
-                .Where(x => x.CatId == id)
-                .Select(x => new CategoryViewModel
-                {
-                    CatId = x.CatId,
-                    CatName = x.CatName
-                })
-                .FirstOrDefaultAsync();
+            var cat = await _categoryService.GetCategoryAsync(id);
 
             if (cat is null)
             {
@@ -54,33 +38,25 @@ namespace POS.API.Controllers
         [HttpPost]
         public async Task<IActionResult> CreateCategory(CategoryViewModel category)
         {
-            var cat = new Category
-            {
-                CatName = category.CatName
-            };
-            await _db.Categories.AddAsync(cat);
-            await _db.SaveChangesAsync();
-            category.CatId = cat.CatId;
+            category = await _categoryService.CreateCategoryAsync(category);
             return Ok(category);
         }
 
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateCategory(int id, CategoryViewModel category)
         {
-            var cat = await _db.Categories.FirstOrDefaultAsync(x => x.CatId == id);
-            if(cat is null)
+            var updatedCategory = await _categoryService.UpdateCategoryAsync(id, category);
+            if (updatedCategory is null)
             {
                 return NotFound();
             }
-            cat.CatName = category.CatName;
-            await _db.SaveChangesAsync();
-            return Ok(category);
+            return Ok(updatedCategory);
         }
 
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteCategory(int id)
         {
-            await _db.Categories.Where(x => x.CatId == id).ExecuteDeleteAsync();
+            await _categoryService.DeleteCategoryAsync(id);
             return NoContent();
         }
     }
