@@ -14,9 +14,10 @@ public class SaleService
         _db = db;
     }
 
-    public async Task<List<SaleViewModel>> GetSalesAsync()
+    public async Task<Result<List<SaleViewModel>>> GetSalesAsync()
     {
-        return await _db.Sales.AsNoTracking()
+        Result<List<SaleViewModel>> model;
+        var list = await _db.Sales.AsNoTracking()
             .Select(x => new SaleViewModel
             {
                 SaleId = x.SaleId,
@@ -35,11 +36,14 @@ public class SaleService
                     .ToList()
             })
             .ToListAsync();
+        model = Result<List<SaleViewModel>>.Success("Sales retrieved successfully", list);
+        return model;
     }
 
-    public async Task<SaleViewModel?> GetSaleAsync(int id)
+    public async Task<Result<SaleViewModel>> GetSaleAsync(int id)
     {
-        return await _db.Sales
+        Result<SaleViewModel> model;
+        var entity = await _db.Sales
             .AsNoTracking()
             .Where(x => x.SaleId == id)
             .Select(x => new SaleViewModel
@@ -60,10 +64,20 @@ public class SaleService
                     .ToList()
             })
             .FirstOrDefaultAsync();
+        if (entity is null)
+        {
+            model = Result<SaleViewModel>.ValidationError("Sale not found");
+            goto Response;
+        }
+        model = Result<SaleViewModel>.Success("Sale retrieved successfully", entity);
+
+        Response:
+        return model;
     }
 
-    public async Task<SaleViewModel> CreateSaleAsync(SaleViewModel sale)
+    public async Task<Result<SaleViewModel>> CreateSaleAsync(SaleViewModel sale)
     {
+        Result<SaleViewModel> model;
         var entity = new Sale
         {
             InvoiceNo = sale.InvoiceNo,
@@ -89,15 +103,18 @@ public class SaleService
             detail.SaleId = entity.SaleId;
         }
 
-        return sale;
+        model = Result<SaleViewModel>.Success("Sale created successfully", sale);
+        return model;
     }
 
-    public async Task<SaleViewModel?> UpdateSaleAsync(int id, SaleViewModel sale)
+    public async Task<Result<SaleViewModel>> UpdateSaleAsync(int id, SaleViewModel sale)
     {
+        Result<SaleViewModel> model;
         var entity = await _db.Sales.FirstOrDefaultAsync(x => x.SaleId == id);
         if (entity is null)
         {
-            return null;
+            model = Result<SaleViewModel>.ValidationError("Sale not found");
+            goto Response;
         }
 
         entity.Date = sale.Date;
@@ -123,16 +140,22 @@ public class SaleService
         await _db.SaveChangesAsync();
 
         sale.SaleId = id;
-        return sale;
+        model = Result<SaleViewModel>.Success("Sale updated successfully", sale);
+
+    Response:
+        return model;
     }
 
-    public async Task DeleteSaleAsync(int id)
+    public async Task<Result<SaleViewModel>> DeleteSaleAsync(int id)
     {
+        Result<SaleViewModel> model;
         await _db.SaleDetails
             .Where(x => x.SaleId == id)
             .ExecuteDeleteAsync();
         await _db.Sales
             .Where(x => x.SaleId == id)
             .ExecuteDeleteAsync();
+        model = Result<SaleViewModel>.Success();
+        return model;
     }
 }

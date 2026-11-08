@@ -14,9 +14,10 @@ public class ProductService
         _db = db;
     }
 
-    public async Task<List<ProductViewModel>> GetProductsAsync()
+    public async Task<Result<List<ProductViewModel>>> GetProductsAsync()
     {
-        return await _db.Products.AsNoTracking()
+        Result<List<ProductViewModel>> model;
+        var list = await _db.Products.AsNoTracking()
             .Select(x => new ProductViewModel
             {
                 ProductId = x.ProductId,
@@ -26,26 +27,38 @@ public class ProductService
                 Price = x.Price
             })
             .ToListAsync();
+        model = Result<List<ProductViewModel>>.Success("Products retrieved successfully", list);
+        return model;
     }
 
-    public async Task<ProductViewModel?> GetProductAsync(int id)
+    public async Task<Result<ProductViewModel>> GetProductAsync(int id)
     {
-        return await _db.Products
+        Result<ProductViewModel> model;
+        var entity = await _db.Products
             .AsNoTracking()
-            .Where(x => x.ProductId == id)
-            .Select(x => new ProductViewModel
-            {
-                ProductId = x.ProductId,
-                ProductName = x.ProductName,
-                ProductCode = x.ProductCode,
-                CatId = x.CatId,
-                Price = x.Price
-            })
-            .FirstOrDefaultAsync();
+            .FirstOrDefaultAsync(x => x.ProductId == id);
+        if (entity is null)
+        {
+            model = Result<ProductViewModel>.ValidationError("Product not found");
+            goto Response;
+        }
+        var product = new ProductViewModel
+        {
+            ProductId = entity.ProductId,
+            ProductName = entity.ProductName,
+            ProductCode = entity.ProductCode,
+            CatId = entity.CatId,
+            Price = entity.Price
+        };
+        model = Result<ProductViewModel>.Success("Product retrieved successfully", product);
+
+        Response:
+        return model;
     }
 
-    public async Task<ProductViewModel> CreateProductAsync(ProductViewModel product)
+    public async Task<Result<ProductViewModel>> CreateProductAsync(ProductViewModel product)
     {
+        Result<ProductViewModel> model;
         var entity = new Product
         {
             ProductName = product.ProductName,
@@ -58,17 +71,20 @@ public class ProductService
         await _db.SaveChangesAsync();
 
         product.ProductId = entity.ProductId;
-        return product;
+        model = Result<ProductViewModel>.Success("Product created successfully", product);
+        return model;
     }
 
-    public async Task<ProductViewModel?> UpdateProductAsync(int id, ProductViewModel product)
+    public async Task<Result<ProductViewModel>> UpdateProductAsync(int id, ProductViewModel product)
     {
+        Result<ProductViewModel> model;
         var entity = await _db.Products
             .AsNoTracking()
             .FirstOrDefaultAsync(x => x.ProductId == id);
         if (entity is null)
         {
-            return null;
+            model = Result<ProductViewModel>.ValidationError("Product not found");
+            goto Response;
         }
 
         entity.ProductName = product.ProductName;
@@ -77,13 +93,19 @@ public class ProductService
         entity.Price = product.Price;
         _db.Entry(entity).State = EntityState.Modified;
         await _db.SaveChangesAsync();
-        return product;
+        model = Result<ProductViewModel>.Success("Product updated successfully", product);
+
+    Response:
+        return model;
     }
 
-    public async Task DeleteProductAsync(int id)
+    public async Task<Result<ProductViewModel>> DeleteProductAsync(int id)
     {
+        Result<ProductViewModel> model;
         await _db.Products
             .Where(x => x.ProductId == id)
             .ExecuteDeleteAsync();
+        model = Result<ProductViewModel>.Success();
+        return model;
     }
 }

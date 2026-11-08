@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.AspNetCore.Mvc;
 using POS.API.Services;
 using POS.API.ViewModels;
 
@@ -6,7 +7,7 @@ namespace POS.API.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class CategoryController : Controller
+    public class CategoryController : BaseController
     {
         private readonly CategoryService _categoryService;
 
@@ -18,46 +19,36 @@ namespace POS.API.Controllers
         [HttpGet]
         public async Task<IActionResult> GetCategoriesAsync()
         {
-            var list = await _categoryService.GetCategoriesAsync();
-            return Ok(list);
+            var result = await _categoryService.GetCategoriesAsync();
+            return Execute<List<CategoryViewModel>>(result);
         }
 
         [HttpGet("{id}", Name = "GetCategoryById")]
         public async Task<IActionResult> GetCategoryAsync(int id)
         {
             var cat = await _categoryService.GetCategoryAsync(id);
-
-            if (cat is null)
-            {
-                return NotFound();
-            }
-
             return Ok(cat);
         }
 
         [HttpPost]
         public async Task<IActionResult> CreateCategory(CategoryViewModel category)
         {
-            category = await _categoryService.CreateCategoryAsync(category);
-            return Ok(category);
+            var result = await _categoryService.CreateCategoryAsync(category);
+            return Execute<CategoryViewModel>(result);
         }
 
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateCategory(int id, CategoryViewModel category)
         {
-            var updatedCategory = await _categoryService.UpdateCategoryAsync(id, category);
-            if (updatedCategory is null)
-            {
-                return NotFound();
-            }
-            return Ok(updatedCategory);
+            var result = await _categoryService.UpdateCategoryAsync(id, category);
+            return Execute<CategoryViewModel>(result);
         }
 
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteCategory(int id)
         {
-            await _categoryService.DeleteCategoryAsync(id);
-            return NoContent();
+            var result = await _categoryService.DeleteCategoryAsync(id);
+            return Execute<CategoryViewModel>(result);
         }
     }
 }

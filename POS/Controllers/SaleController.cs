@@ -6,7 +6,7 @@ namespace POS.API.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class SaleController : Controller
+    public class SaleController : BaseController
     {
         private readonly SaleService _saleService;
 
@@ -18,46 +18,36 @@ namespace POS.API.Controllers
         [HttpGet]
         public async Task<IActionResult> GetSalesAsync()
         {
-            var list = await _saleService.GetSalesAsync();
-            return Ok(list);
+            var result = await _saleService.GetSalesAsync();
+            return Execute<List<SaleViewModel>>(result);
         }
 
         [HttpGet("{id}", Name = "GetSaleById")]
         public async Task<IActionResult> GetSaleAsync(int id)
         {
-            var sale = await _saleService.GetSaleAsync(id);
-
-            if (sale is null)
-            {
-                return NotFound();
-            }
-
-            return Ok(sale);
+            var result = await _saleService.GetSaleAsync(id);
+            return Execute<SaleViewModel>(result);
         }
 
         [HttpPost]
         public async Task<IActionResult> CreateSale(SaleViewModel sale)
         {
-            sale = await _saleService.CreateSaleAsync(sale);
-            return Ok(sale);
+            var result = await _saleService.CreateSaleAsync(sale);
+            return Execute<SaleViewModel>(result);
         }
 
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateSale(int id, SaleViewModel sale)
         {
-            var updatedSale = await _saleService.UpdateSaleAsync(id, sale);
-            if (updatedSale is null)
-            {
-                return NotFound();
-            }
-            return Ok(updatedSale);
+            var result = await _saleService.UpdateSaleAsync(id, sale);
+            return Execute<SaleViewModel>(result);
         }
 
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteSale(int id)
         {
-            await _saleService.DeleteSaleAsync(id);
-            return NoContent();
+            var result = await _saleService.DeleteSaleAsync(id);
+            return Execute<SaleViewModel>(result);
         }
     }
 }
