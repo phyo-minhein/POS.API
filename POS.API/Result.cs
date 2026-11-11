@@ -10,7 +10,7 @@ public class Result<T>
     public bool IsSystemError { get { return Type == EnumRespType.SystemError; } }
     private EnumRespType Type { get; set; }
     public T? Data { get; set; }
-    public string Message { get; set; }
+    public string Message { get; set; } = string.Empty;
 
     public static Result<T> Success(T data, string message = "Success.")
     {
