@@ -23,11 +23,15 @@ packages/
 # Logs
 *.log
 
+# Local development plan
+docs/10-day-roadmap.md
+
 # Environment variables and secrets
 .env
 .env.*
 !.env.example
 secrets.json
+appsettings.json
 
 # SQLite database
 *.db
