@@ -8,8 +8,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\POS.Frontend.Client\POS.Frontend.Client.csproj" />
-    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server" Version="10.0.15" />
+    <Folder Include="Clients\" />
+    <Folder Include="Models\" />
   </ItemGroup>
 
 </Project>
