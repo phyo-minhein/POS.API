@@ -1,6 +1,4 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using POS.API.ViewModels;
-using System.Text.Json.Serialization;
 
 namespace POS.API.Controllers
 {
@@ -13,6 +11,12 @@ namespace POS.API.Controllers
         {
             if (model.IsValidationError)
                 return BadRequest(model);
+
+            if (model.IsNotFoundError)
+                return NotFound(model);
+
+            if (model.IsConflictError)
+                return Conflict(model);
 
             if (model.IsSystemError)
                 return StatusCode(500, model);

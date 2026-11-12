@@ -1,54 +1,70 @@
-﻿using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
+using POS.API.Dtos.Categories;
 using POS.API.Services;
-using POS.API.ViewModels;
 
-namespace POS.API.Controllers
+namespace POS.API.Controllers;
+
+[ApiController]
+[Route("api/categories")]
+public class CategoryController : BaseController
 {
-    [ApiController]
-    [Route("api/[controller]")]
-    public class CategoryController : BaseController
+    private readonly CategoryService _categoryService;
+
+    public CategoryController(CategoryService categoryService)
     {
-        private readonly CategoryService _categoryService;
+        _categoryService = categoryService;
+    }
 
-        public CategoryController(CategoryService categoryService)
+    [HttpGet]
+    public async Task<IActionResult> GetCategoriesAsync(CancellationToken cancellationToken)
+    {
+        var result = await _categoryService.GetCategoriesAsync(cancellationToken);
+        return Execute(result);
+    }
+
+    [HttpGet("{id:int}", Name = "GetCategoryById")]
+    public async Task<IActionResult> GetCategoryAsync(
+        int id,
+        CancellationToken cancellationToken)
+    {
+        var result = await _categoryService.GetCategoryAsync(id, cancellationToken);
+        return Execute(result);
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> CreateCategoryAsync(
+        CreateCategoryDto category,
+        CancellationToken cancellationToken)
+    {
+        var result = await _categoryService.CreateCategoryAsync(category, cancellationToken);
+
+        if (!result.IsSuccess)
         {
-            _categoryService = categoryService;
+            return Execute(result);
         }
 
-        [HttpGet]
-        public async Task<IActionResult> GetCategoriesAsync()
-        {
-            var result = await _categoryService.GetCategoriesAsync();
-            return Execute<List<CategoryViewModel>>(result);
-        }
+        return CreatedAtRoute(
+            "GetCategoryById",
+            new { id = result.Data!.Id },
+            result);
+    }
 
-        [HttpGet("{id}", Name = "GetCategoryById")]
-        public async Task<IActionResult> GetCategoryAsync(int id)
-        {
-            var cat = await _categoryService.GetCategoryAsync(id);
-            return Ok(cat);
-        }
+    [HttpPut("{id:int}")]
+    public async Task<IActionResult> UpdateCategoryAsync(
+        int id,
+        UpdateCategoryDto category,
+        CancellationToken cancellationToken)
+    {
+        var result = await _categoryService.UpdateCategoryAsync(id, category, cancellationToken);
+        return Execute(result);
+    }
 
-        [HttpPost]
-        public async Task<IActionResult> CreateCategory(CategoryViewModel category)
-        {
-            var result = await _categoryService.CreateCategoryAsync(category);
-            return Execute<CategoryViewModel>(result);
-        }
-
-        [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateCategory(int id, CategoryViewModel category)
-        {
-            var result = await _categoryService.UpdateCategoryAsync(id, category);
-            return Execute<CategoryViewModel>(result);
-        }
-
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteCategory(int id)
-        {
-            var result = await _categoryService.DeleteCategoryAsync(id);
-            return Execute<CategoryViewModel>(result);
-        }
+    [HttpDelete("{id:int}")]
+    public async Task<IActionResult> DeleteCategoryAsync(
+        int id,
+        CancellationToken cancellationToken)
+    {
+        var result = await _categoryService.DeleteCategoryAsync(id, cancellationToken);
+        return Execute(result);
     }
 }

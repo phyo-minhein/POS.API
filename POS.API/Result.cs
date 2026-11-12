@@ -8,6 +8,8 @@ public class Result<T>
     public bool IsError { get { return !IsSuccess; } }
     public bool IsValidationError { get { return Type == EnumRespType.ValidationError; } }
     public bool IsSystemError { get { return Type == EnumRespType.SystemError; } }
+    public bool IsNotFoundError { get { return Type == EnumRespType.NotFoundError; } }
+    public bool IsConflictError { get { return Type == EnumRespType.ConflictError; } }
     private EnumRespType Type { get; set; }
     public T? Data { get; set; }
     public string Message { get; set; } = string.Empty;
@@ -53,6 +55,28 @@ public class Result<T>
             Data = data,
             Message = message,
             Type = EnumRespType.SystemError,
+        };
+    }
+
+    public static Result<T> NotFoundError(string message, T? data = default)
+    {
+        return new Result<T>()
+        {
+            IsSuccess = false,
+            Data = data,
+            Message = message,
+            Type = EnumRespType.NotFoundError,
+        };
+    }
+
+    public static Result<T> ConflictError(string message, T? data = default)
+    {
+        return new Result<T>()
+        {
+            IsSuccess = false,
+            Data = data,
+            Message = message,
+            Type = EnumRespType.ConflictError,
         };
     }
 

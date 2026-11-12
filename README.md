@@ -140,11 +140,13 @@ Both applications must be running when a frontend feature communicates with the 
 
 The current API exposes CRUD-style endpoints under:
 
-- `/api/category`
+- `/api/categories`
 - `/api/product`
 - `/api/sale`
 
 Swagger displays the exact operations and request/response schemas available in the current build.
+
+The target contract for the Category vertical slice is documented in [`docs/api/categories.md`](docs/api/categories.md). It is implemented incrementally and may be ahead of the current controller while the slice is in progress.
 
 ## Development approach
 
