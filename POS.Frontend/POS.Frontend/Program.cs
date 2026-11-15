@@ -1,10 +1,25 @@
 using POS.Frontend.Components;
+using POS.Frontend.Clients;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
+
+var apiBaseUrl = builder.Configuration["ApiBaseUrl"];
+
+if (!Uri.TryCreate(apiBaseUrl, UriKind.Absolute, out var apiBaseAddress) ||
+    (apiBaseAddress.Scheme != Uri.UriSchemeHttp && apiBaseAddress.Scheme != Uri.UriSchemeHttps))
+{
+    throw new InvalidOperationException("ApiBaseUrl must be an absolute HTTP or HTTPS URL.");
+}
+
+builder.Services.AddHttpClient<CategoriesClient>(client =>
+{
+    client.BaseAddress = apiBaseAddress;
+    client.Timeout = TimeSpan.FromSeconds(10);
+});
 
 var app = builder.Build();
 

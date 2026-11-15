@@ -1,0 +1,164 @@
+@page "/categories/new"
+@page "/categories/edit/{Id:int}"
+@rendermode InteractiveServer
+@implements IDisposable
+@inject CategoriesClient CategoriesClient
+@inject NavigationManager Navigation
+
+<PageTitle>@(Id.HasValue ? "Edit category" : "New category")</PageTitle>
+
+<div class="mb-4">
+    <h1>@(Id.HasValue ? "Edit category" : "New category")</h1>
+    <p class="text-muted">Category names are required and may contain up to 50 characters.</p>
+</div>
+
+@if (isLoading)
+{
+    <div class="d-flex align-items-center gap-2" role="status" aria-live="polite">
+        <div class="spinner-border spinner-border-sm" aria-hidden="true"></div>
+        <span>Loading category...</span>
+    </div>
+}
+else
+{
+    @if (errorMessage is not null)
+    {
+        <div class="alert alert-danger" role="alert">@errorMessage</div>
+    }
+
+    <div class="card shadow-sm" style="max-width: 36rem;">
+        <div class="card-body">
+            <EditForm Model="model" OnValidSubmit="SaveAsync" FormName="category-form">
+                <DataAnnotationsValidator />
+
+                <div class="mb-3">
+                    <label for="category-name" class="form-label">Name</label>
+                    <InputText id="category-name"
+                               class="form-control"
+                               maxlength="50"
+                               autocomplete="off"
+                               @bind-Value="model.Name" />
+                    <ValidationMessage For="@(() => model.Name)" class="text-danger" />
+                </div>
+
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary" disabled="@isSaving">
+                        @(isSaving ? "Saving..." : "Save")
+                    </button>
+                    <a class="btn btn-outline-secondary" href="categories">Cancel</a>
+                </div>
+            </EditForm>
+        </div>
+    </div>
+}
+
+@code {
+    private readonly CancellationTokenSource cancellationTokenSource = new();
+    private CategoryFormModel model = new();
+    private string? errorMessage;
+    private bool isLoading;
+    private bool isSaving;
+
+    [Parameter]
+    public int? Id { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        model = new CategoryFormModel();
+        errorMessage = null;
+
+        if (!Id.HasValue)
+        {
+            isLoading = false;
+            return;
+        }
+
+        isLoading = true;
+
+        try
+        {
+            var result = await CategoriesClient.GetCategoryAsync(
+                Id.Value,
+                cancellationTokenSource.Token);
+
+            if (!result.IsSuccess)
+            {
+                errorMessage = result.Message;
+                return;
+            }
+
+            if (result.Data is null)
+            {
+                errorMessage = "The API returned the category without data.";
+                return;
+            }
+
+            model.Name = result.Data.Name;
+        }
+        catch (ApiException exception)
+        {
+            errorMessage = exception.Message;
+        }
+        catch (OperationCanceledException) when (cancellationTokenSource.IsCancellationRequested)
+        {
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task SaveAsync()
+    {
+        isSaving = true;
+        errorMessage = null;
+
+        try
+        {
+            if (Id.HasValue)
+            {
+                var result = await CategoriesClient.UpdateCategoryAsync(
+                    Id.Value,
+                    model,
+                    cancellationTokenSource.Token);
+
+                if (!result.IsSuccess)
+                {
+                    errorMessage = result.Message;
+                    return;
+                }
+            }
+            else
+            {
+                var result = await CategoriesClient.CreateCategoryAsync(
+                    model,
+                    cancellationTokenSource.Token);
+
+                if (!result.IsSuccess)
+                {
+                    errorMessage = result.Message;
+                    return;
+                }
+            }
+
+            Navigation.NavigateTo("categories");
+        }
+        catch (ApiException exception)
+        {
+            errorMessage = exception.Message;
+        }
+        catch (OperationCanceledException) when (cancellationTokenSource.IsCancellationRequested)
+        {
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+
+    public void Dispose()
+    {
+        cancellationTokenSource.Cancel();
+        cancellationTokenSource.Dispose();
+    }
+}
