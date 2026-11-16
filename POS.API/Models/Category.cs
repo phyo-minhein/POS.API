@@ -3,11 +3,11 @@ using System.Collections.Generic;
 
 namespace POS.Models;
 
-public partial class Category
+public class Category
 {
     public int CatId { get; set; }
 
-    public string CatName { get; set; } = null!;
+    public string CatName { get; set; } = string.Empty;
 
-    public virtual ICollection<Product> Products { get; set; } = new List<Product>();
+    public ICollection<Product> Products { get; set; } = new List<Product>();
 }

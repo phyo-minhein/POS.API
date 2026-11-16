@@ -7,7 +7,7 @@ A portfolio point-of-sale application built with ASP.NET Core, Entity Framework 
 The repository currently includes:
 
 - Category, product, and sale API controllers
-- Entity Framework Core database-first models for four domain tables
+- Entity Framework Core code-first models and migrations for four domain tables
 - Service classes and asynchronous database operations
 - Swagger/OpenAPI documentation
 - A Blazor Web App using Interactive Server components
@@ -34,6 +34,7 @@ POS/
 ├── POS.API/
 │   ├── Controllers/
 │   ├── Data/
+│   │   └── Migrations/
 │   ├── Models/
 │   ├── Services/
 │   ├── ViewModels/
@@ -54,7 +55,7 @@ The frontend is organized for a typed-client structure: Razor components will de
 
 ## Database model
 
-The existing database-first domain contains:
+The code-first domain contains:
 
 - `Category`
 - `Product`
@@ -69,7 +70,7 @@ Install or provide:
 
 - The .NET 10 SDK specified by `global.json`
 - SQL Server
-- A local `POS` database containing the current domain tables
+- Access to a local SQL Server instance
 - Visual Studio with .NET 10 tooling, or a terminal/editor capable of running .NET projects
 
 Check the selected SDK:
@@ -98,6 +99,14 @@ Files named `appsettings.json` are intentionally ignored by Git. Create `POS.API
 ```
 
 Replace the placeholders with local development credentials. Never commit real passwords, tokens, or production connection strings.
+
+Create or update the database from the code-first migrations:
+
+```powershell
+dotnet ef database update --project .\POS.API\POS.API.csproj --startup-project .\POS.API\POS.API.csproj
+```
+
+The initial migration creates the `Category`, `Product`, `Sale`, and `SaleDetail` tables. Future schema changes must be made in the entity model and recorded with `dotnet ef migrations add`; do not run `dbcontext scaffold`.
 
 The frontend currently requires no private configuration. API base-address configuration will be introduced with the first real typed feature client.
 
@@ -160,6 +169,8 @@ Features are implemented as vertical slices:
 6. Test the complete browser-to-database path.
 
 EF Core already provides repository and unit-of-work behavior, so the project avoids a generic repository layer unless a concrete requirement justifies one.
+
+The application owns its schema through EF Core migrations. Entity and relationship changes are made in C# first, followed by a migration that can update existing databases or create a clean database from scratch.
 
 ## Planned features
 

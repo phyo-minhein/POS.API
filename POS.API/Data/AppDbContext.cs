@@ -5,23 +5,20 @@ using POS.Models;
 
 namespace POS.Data;
 
-public partial class AppDbContext : DbContext
+public class AppDbContext : DbContext
 {
-    public AppDbContext()
-    {
-    }
     public AppDbContext(DbContextOptions<AppDbContext> options)
         : base(options)
     {
     }
 
-    public virtual DbSet<Category> Categories { get; set; }
+    public DbSet<Category> Categories { get; set; }
 
-    public virtual DbSet<Product> Products { get; set; }
+    public DbSet<Product> Products { get; set; }
 
-    public virtual DbSet<Sale> Sales { get; set; }
+    public DbSet<Sale> Sales { get; set; }
 
-    public virtual DbSet<SaleDetail> SaleDetails { get; set; }
+    public DbSet<SaleDetail> SaleDetails { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -38,7 +35,15 @@ public partial class AppDbContext : DbContext
 
         modelBuilder.Entity<Product>(entity =>
         {
-            entity.ToTable("Product");
+            entity.ToTable("Product", table =>
+            {
+                table.HasCheckConstraint("CK_Product_Price_NonNegative", "[Price] >= 0");
+                table.HasCheckConstraint("CK_Product_StockQuantity_NonNegative", "[StockQuantity] >= 0");
+                table.HasCheckConstraint("CK_Product_ReorderLevel_NonNegative", "[ReorderLevel] >= 0");
+            });
+
+            entity.HasAlternateKey(e => e.ProductCode)
+                .HasName("UQ_Product_ProductCode");
 
             entity.Property(e => e.Price).HasColumnType("decimal(10, 2)");
             entity.Property(e => e.ProductCode)
@@ -47,6 +52,8 @@ public partial class AppDbContext : DbContext
             entity.Property(e => e.ProductName)
                 .HasMaxLength(100)
                 .IsUnicode(false);
+            entity.Property(e => e.StockQuantity).HasDefaultValue(0, "DF_Product_StockQuantity");
+            entity.Property(e => e.ReorderLevel).HasDefaultValue(5, "DF_Product_ReorderLevel");
 
             entity.HasOne(d => d.Cat).WithMany(p => p.Products)
                 .HasForeignKey(d => d.CatId)
@@ -82,8 +89,5 @@ public partial class AppDbContext : DbContext
                 .HasConstraintName("FK_SaleDetail_Sale");
         });
 
-        OnModelCreatingPartial(modelBuilder);
     }
-
-    partial void OnModelCreatingPartial(ModelBuilder modelBuilder);
 }
