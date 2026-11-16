@@ -7,50 +7,61 @@
 
 <PageTitle>@(Id.HasValue ? "Edit category" : "New category")</PageTitle>
 
-<div class="mb-4">
-    <h1>@(Id.HasValue ? "Edit category" : "New category")</h1>
-    <p class="text-muted">Category names are required and may contain up to 50 characters.</p>
-</div>
+<div class="category-form-page">
+    <a class="back-link" href="/categories">
+        <span aria-hidden="true">←</span>
+        Back to categories
+    </a>
 
-@if (isLoading)
-{
-    <div class="d-flex align-items-center gap-2" role="status" aria-live="polite">
-        <div class="spinner-border spinner-border-sm" aria-hidden="true"></div>
-        <span>Loading category...</span>
-    </div>
-}
-else
-{
-    @if (errorMessage is not null)
+    <header class="page-heading">
+        <h1>@(Id.HasValue ? "Edit category" : "New category")</h1>
+        <p>@(Id.HasValue ? "Update the category name below." : "Create a category for grouping products.")</p>
+    </header>
+
+    @if (isLoading)
     {
-        <div class="alert alert-danger" role="alert">@errorMessage</div>
+        <section class="state-card" role="status" aria-live="polite">
+            <span class="loading-spinner" aria-hidden="true"></span>
+            <span>Loading category...</span>
+        </section>
     }
+    else
+    {
+        @if (errorMessage is not null)
+        {
+            <div class="alert-message error" role="alert">@errorMessage</div>
+        }
 
-    <div class="card shadow-sm" style="max-width: 36rem;">
-        <div class="card-body">
-            <EditForm Model="model" OnValidSubmit="SaveAsync" FormName="category-form">
+        <section class="form-card">
+            <EditForm Model="model" OnValidSubmit="SaveAsync" FormName="category-form" class="category-form">
                 <DataAnnotationsValidator />
 
-                <div class="mb-3">
-                    <label for="category-name" class="form-label">Name</label>
-                    <InputText id="category-name"
-                               class="form-control"
-                               maxlength="50"
-                               autocomplete="off"
-                               @bind-Value="model.Name" />
-                    <ValidationMessage For="@(() => model.Name)" class="text-danger" />
+                <div class="form-introduction">
+                    <h2>Category details</h2>
+                    <p>The category name can contain up to 50 characters.</p>
                 </div>
 
-                <div class="d-flex gap-2">
-                    <button type="submit" class="btn btn-primary" disabled="@isSaving">
-                        @(isSaving ? "Saving..." : "Save")
+                <div class="form-field">
+                    <label for="category-name">Category name</label>
+                    <InputText id="category-name"
+                               class="form-input"
+                               autocomplete="off"
+                               placeholder="For example, Beverages"
+                               disabled="@isSaving"
+                               @bind-Value="model.Name" />
+                    <ValidationMessage For="@(() => model.Name)" class="field-error" />
+                </div>
+
+                <div class="form-actions">
+                    <a class="secondary-action" href="/categories">Cancel</a>
+                    <button type="submit" class="primary-action" disabled="@isSaving">
+                        @(isSaving ? "Saving..." : "Save category")
                     </button>
-                    <a class="btn btn-outline-secondary" href="categories">Cancel</a>
                 </div>
             </EditForm>
-        </div>
-    </div>
-}
+        </section>
+    }
+</div>
 
 @code {
     private readonly CancellationTokenSource cancellationTokenSource = new();

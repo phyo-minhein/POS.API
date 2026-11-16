@@ -6,15 +6,17 @@
 
 main {
     flex: 1;
+    min-width: 0;
+    background-color: #f6f7fb;
 }
 
 .sidebar {
-    background-image: linear-gradient(180deg, rgb(5, 39, 103) 0%, #3a0647 70%);
+    background: #111827;
 }
 
 .top-row {
-    background-color: #f7f7f7;
-    border-bottom: 1px solid #d6d5d5;
+    background-color: #ffffff;
+    border-bottom: 1px solid #e2e8f0;
     justify-content: flex-end;
     height: 3.5rem;
     display: flex;
@@ -72,7 +74,7 @@ main {
 
     .top-row, article {
         padding-left: 2rem !important;
-        padding-right: 1.5rem !important;
+        padding-right: 2rem !important;
     }
 }
 

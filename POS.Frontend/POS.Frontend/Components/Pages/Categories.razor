@@ -5,95 +5,122 @@
 
 <PageTitle>Categories</PageTitle>
 
-<div class="d-flex align-items-start justify-content-between gap-3 mb-4">
-    <div>
-        <h1>Categories</h1>
-        <p class="text-muted mb-0">Organize products into categories.</p>
-    </div>
-    <a class="btn btn-primary" href="categories/new">Add category</a>
-</div>
+<div class="category-page">
+    <header class="page-heading">
+        <div>
+            <h1>Categories</h1>
+            <p>Organize the product catalog.</p>
+        </div>
+        <a class="primary-action" href="/categories/new">
+            <span aria-hidden="true">+</span>
+            Add category
+        </a>
+    </header>
 
-@if (isLoading)
-{
-    <div class="d-flex align-items-center gap-2" role="status" aria-live="polite">
-        <div class="spinner-border spinner-border-sm" aria-hidden="true"></div>
-        <span>Loading categories...</span>
-    </div>
-}
-else if (errorMessage is not null)
-{
-    <div class="alert alert-danger" role="alert">
-        <p class="mb-2">@errorMessage</p>
-        <button class="btn btn-sm btn-outline-danger" @onclick="LoadCategoriesAsync">Try again</button>
-    </div>
-}
-else if (categories is null || categories.Count == 0)
-{
-    <div class="border rounded p-4 text-center bg-body-tertiary">
-        <h2 class="h5">No categories yet</h2>
-        <p class="text-muted">Create the first category to start organizing products.</p>
-        <a class="btn btn-primary" href="categories/new">Create category</a>
-    </div>
-}
-else
-{
-    <div class="table-responsive border rounded">
-        <table class="table table-hover align-middle mb-0">
-            <thead class="table-light">
-                <tr>
-                    <th scope="col">Name</th>
-                    <th scope="col" class="text-end">Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var category in categories)
-                {
-                    <tr @key="category.Id">
-                        <td>@category.Name</td>
-                        <td class="text-end text-nowrap">
-                            <a class="btn btn-sm btn-outline-secondary me-2"
-                               href="@($"categories/edit/{category.Id}")">Edit</a>
-                            <button class="btn btn-sm btn-outline-danger"
-                                    @onclick="() => ConfirmDelete(category)">Delete</button>
-                        </td>
-                    </tr>
-                }
-            </tbody>
-        </table>
-    </div>
-}
+    @if (isLoading)
+    {
+        <section class="state-card" role="status" aria-live="polite">
+            <span class="loading-spinner" aria-hidden="true"></span>
+            <span>Loading categories...</span>
+        </section>
+    }
+    else if (errorMessage is not null)
+    {
+        <div class="alert-message error" role="alert">
+            <span>@errorMessage</span>
+            <button type="button" class="text-button danger" @onclick="LoadCategoriesAsync">Try again</button>
+        </div>
+    }
+    else if (categories is null || categories.Count == 0)
+    {
+        <section class="empty-card">
+            <span class="empty-icon" aria-hidden="true">◇</span>
+            <h2>No categories yet</h2>
+            <p>Add the first category to start organizing products.</p>
+            <a class="primary-action" href="/categories/new">Create category</a>
+        </section>
+    }
+    else
+    {
+        @if (deleteErrorMessage is not null)
+        {
+            <div class="alert-message error" role="alert">@deleteErrorMessage</div>
+        }
+
+        <section class="list-card">
+            <div class="list-card-heading">
+                <h2>All categories</h2>
+                <span>@categories.Count @(categories.Count == 1 ? "category" : "categories")</span>
+            </div>
+
+            <div class="table-wrapper">
+                <table class="category-table">
+                    <thead>
+                        <tr>
+                            <th scope="col">Name</th>
+                            <th scope="col" class="actions-column">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var category in categories)
+                        {
+                            <tr @key="category.Id">
+                                <td data-label="Name"><strong>@category.Name</strong></td>
+                                <td data-label="Actions" class="row-actions">
+                                    <a class="text-button" href="@($"/categories/edit/{category.Id}")">Edit</a>
+                                    <button type="button"
+                                            class="text-button danger"
+                                            disabled="@isDeleting"
+                                            @onclick="() => ConfirmDelete(category)">
+                                        Delete
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    }
+</div>
 
 @if (categoryPendingDelete is not null)
 {
-    <div class="modal d-block" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="delete-category-title">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h2 class="modal-title fs-5" id="delete-category-title">Delete category?</h2>
-                    <button type="button" class="btn-close" aria-label="Close"
-                            disabled="@isDeleting" @onclick="CancelDelete"></button>
-                </div>
-                <div class="modal-body">
-                    <p>Delete <strong>@categoryPendingDelete.Name</strong>?</p>
-                    <p class="text-muted mb-0">A category used by products cannot be deleted.</p>
-
-                    @if (deleteErrorMessage is not null)
-                    {
-                        <div class="alert alert-danger mt-3 mb-0" role="alert">@deleteErrorMessage</div>
-                    }
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary"
-                            disabled="@isDeleting" @onclick="CancelDelete">Cancel</button>
-                    <button type="button" class="btn btn-danger"
-                            disabled="@isDeleting" @onclick="DeleteCategoryAsync">
-                        @(isDeleting ? "Deleting..." : "Delete")
-                    </button>
-                </div>
+    <div class="dialog-backdrop" role="presentation" @onclick="CancelDelete">
+        <section class="confirm-dialog"
+                 role="dialog"
+                 aria-modal="true"
+                 aria-labelledby="delete-dialog-title"
+                 @onclick:stopPropagation="true">
+            <div class="dialog-heading">
+                <h2 id="delete-dialog-title">Delete category?</h2>
+                <button type="button"
+                        class="close-button"
+                        aria-label="Close"
+                        disabled="@isDeleting"
+                        @onclick="CancelDelete">
+                    ×
+                </button>
             </div>
-        </div>
+
+            <p>Delete <strong>@categoryPendingDelete.Name</strong>?</p>
+            <p class="dialog-note">A category used by products cannot be deleted.</p>
+
+            @if (deleteErrorMessage is not null)
+            {
+                <div class="alert-message error" role="alert">@deleteErrorMessage</div>
+            }
+
+            <div class="dialog-actions">
+                <button type="button" class="secondary-action" disabled="@isDeleting" @onclick="CancelDelete">
+                    Cancel
+                </button>
+                <button type="button" class="danger-action" disabled="@isDeleting" @onclick="DeleteCategoryAsync">
+                    @(isDeleting ? "Deleting..." : "Delete")
+                </button>
+            </div>
+        </section>
     </div>
-    <div class="modal-backdrop show"></div>
 }
 
 @code {
