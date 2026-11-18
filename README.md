@@ -150,7 +150,7 @@ Both applications must be running when a frontend feature communicates with the 
 The current API exposes CRUD-style endpoints under:
 
 - `/api/categories`
-- `/api/product`
+- `/api/products`
 - `/api/sale`
 
 Swagger displays the exact operations and request/response schemas available in the current build.

@@ -5,7 +5,7 @@ Accept: application/json
 
 ###
 
-GET {{POS_HostAddress}}/api/product
+GET {{POS_HostAddress}}/api/products
 Accept: application/json
 
 ###
