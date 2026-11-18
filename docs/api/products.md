@@ -46,34 +46,44 @@ The identifier is database-generated for creates and comes from the route for up
 
 ## Current endpoints
 
-| Method | Path | Request | Response data |
-| --- | --- | --- | --- |
-| `GET` | `/api/products` | — | `List<ProductResponseDto>` |
-| `GET` | `/api/products/{id}` | — | `ProductResponseDto` |
-| `POST` | `/api/products` | `CreateProductDto` | `ProductResponseDto` |
-| `PUT` | `/api/products/{id}` | `UpdateProductDto` | `ProductResponseDto` |
-| `DELETE` | `/api/products/{id}` | — | `ProductResponseDto` or `null` |
+| Method | Path | Request | Success | Response data |
+| --- | --- | --- | --- | --- |
+| `GET` | `/api/products` | Query parameters | `200 OK` | `PagedResult<ProductResponseDto>` |
+| `GET` | `/api/products/{id}` | — | `200 OK` | `ProductResponseDto` |
+| `POST` | `/api/products` | `CreateProductDto` | `201 Created` | `ProductResponseDto` |
+| `PUT` | `/api/products/{id}` | `UpdateProductDto` | `200 OK` | `ProductResponseDto` |
+| `DELETE` | `/api/products/{id}` | — | `200 OK` | `ProductResponseDto` |
 
-Validation, conflict handling, correct not-found semantics, `201 Created`, and cancellation tokens belong to Day 3 task 3.
+The create response includes a `Location` header for the new product. Invalid input returns `400`, a missing product returns `404`, and duplicate product codes or deletion of a product used in a sale returns `409`. All async endpoints accept and pass through the request cancellation token.
 
-## Planned paged list contract
+## Business and validation rules
 
-`ProductQueryDto` defines the upcoming query parameters:
+- Product name is required and cannot exceed 100 characters.
+- Product code is required, cannot exceed 10 characters, and is unique without regard to casing.
+- Category is optional; when selected, it must exist.
+- Price must be between `0` and `99,999,999.99`.
+- Stock quantity and reorder level cannot be negative.
+- A product that has been used in a sale cannot be deleted.
+- Names and codes are trimmed before they are stored.
 
-- `search`
-- `categoryId`
-- `lowStockOnly`
-- `sortBy`
-- `sortDescending`
-- `page`
-- `pageSize`
+## Product list query
 
-After Day 3 task 4, the list endpoint will return `PagedResult<ProductResponseDto>` containing:
+`GET /api/products` accepts these query parameters:
+
+- `search`: partial product-name or product-code search, limited to 100 characters.
+- `categoryId`: returns only products in that category.
+- `lowStockOnly`: when `true`, returns products whose stock is at or below their reorder level.
+- `sortBy`: `name`, `code`, `category`, `price`, `stockQuantity`, or `reorderLevel`. The default is `name`.
+- `sortDescending`: reverses the selected sort order.
+- `page`: one-based page number. The default is `1`.
+- `pageSize`: number of products per page from `1` to `100`. The default is `10`.
+
+Filters can be combined. Sorting always includes product ID as a stable secondary order so that products do not move unpredictably between pages.
+
+The response data is `PagedResult<ProductResponseDto>`:
 
 - `items`
 - `page`
 - `pageSize`
 - `totalCount`
 - `totalPages`
-
-Search, filtering, sorting, and paging behavior are intentionally not active yet.

@@ -16,37 +16,57 @@ public class ProductController : BaseController
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetProductsAsync()
+    public async Task<IActionResult> GetProductsPagingAsync(
+        [FromQuery] ProductQueryDto query,
+        CancellationToken cancellationToken)
     {
-        var result = await _productService.GetProductsAsync();
+        var result = await _productService.GetProductsPagingAsync(query, cancellationToken);
         return Execute(result);
     }
 
     [HttpGet("{id:int}", Name = "GetProductById")]
-    public async Task<IActionResult> GetProductAsync(int id)
+    public async Task<IActionResult> GetProductAsync(
+        int id,
+        CancellationToken cancellationToken)
     {
-        var result = await _productService.GetProductAsync(id);
+        var result = await _productService.GetProductAsync(id, cancellationToken);
         return Execute(result);
     }
 
     [HttpPost]
-    public async Task<IActionResult> CreateProductAsync(CreateProductDto product)
+    public async Task<IActionResult> CreateProductAsync(
+        CreateProductDto product,
+        CancellationToken cancellationToken)
     {
-        var result = await _productService.CreateProductAsync(product);
-        return Execute(result);
+        var result = await _productService.CreateProductAsync(product, cancellationToken);
+
+        if (!result.IsSuccess)
+        {
+            return Execute(result);
+        }
+
+        return CreatedAtRoute(
+            "GetProductById",
+            new { id = result.Data!.Id },
+            result);
     }
 
     [HttpPut("{id:int}")]
-    public async Task<IActionResult> UpdateProductAsync(int id, UpdateProductDto product)
+    public async Task<IActionResult> UpdateProductAsync(
+        int id,
+        UpdateProductDto product,
+        CancellationToken cancellationToken)
     {
-        var result = await _productService.UpdateProductAsync(id, product);
+        var result = await _productService.UpdateProductAsync(id, product, cancellationToken);
         return Execute(result);
     }
 
     [HttpDelete("{id:int}")]
-    public async Task<IActionResult> DeleteProductAsync(int id)
+    public async Task<IActionResult> DeleteProductAsync(
+        int id,
+        CancellationToken cancellationToken)
     {
-        var result = await _productService.DeleteProductAsync(id);
+        var result = await _productService.DeleteProductAsync(id, cancellationToken);
         return Execute(result);
     }
 }
