@@ -15,11 +15,14 @@ if (!Uri.TryCreate(apiBaseUrl, UriKind.Absolute, out var apiBaseAddress) ||
     throw new InvalidOperationException("ApiBaseUrl must be an absolute HTTP or HTTPS URL.");
 }
 
-builder.Services.AddHttpClient<CategoriesClient>(client =>
+void ConfigureApiClient(HttpClient client)
 {
     client.BaseAddress = apiBaseAddress;
     client.Timeout = TimeSpan.FromSeconds(10);
-});
+}
+
+builder.Services.AddHttpClient<CategoriesClient>(ConfigureApiClient);
+builder.Services.AddHttpClient<ProductsClient>(ConfigureApiClient);
 
 var app = builder.Build();
 
