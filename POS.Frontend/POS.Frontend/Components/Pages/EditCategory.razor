@@ -1,9 +1,6 @@
 @page "/categories/new"
 @page "/categories/edit/{Id:int}"
-@rendermode InteractiveServer
 @implements IDisposable
-@inject CategoriesClient CategoriesClient
-@inject NavigationManager Navigation
 
 <PageTitle>@(Id.HasValue ? "Edit category" : "New category")</PageTitle>
 

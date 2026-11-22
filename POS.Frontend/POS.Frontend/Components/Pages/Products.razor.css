@@ -5,6 +5,10 @@
 }
 
 .page-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.5rem;
     margin-bottom: 1.5rem;
 }
 
@@ -98,6 +102,7 @@ button:focus-visible {
     border: 0;
     color: #fff;
     background: #4f46e5;
+    text-decoration: none;
 }
 
 .primary-action:hover {
@@ -209,6 +214,16 @@ select:disabled {
 
 .text-button:hover {
     background: #fee2e2;
+}
+
+.row-actions .text-button {
+    color: #4f46e5;
+    text-decoration: none;
+}
+
+.row-actions .text-button:hover {
+    color: #3730a3;
+    background: #eef2ff;
 }
 
 .empty-card {
@@ -331,6 +346,13 @@ select:disabled {
     white-space: nowrap;
 }
 
+.actions-column,
+.row-actions {
+    width: 6rem;
+    text-align: right !important;
+    white-space: nowrap;
+}
+
 .pagination {
     display: flex;
     align-items: center;
@@ -358,6 +380,10 @@ select:disabled {
 
     .page-heading h1 {
         font-size: 1.65rem;
+    }
+
+    .page-heading {
+        align-items: flex-start;
     }
 
     .filter-card {
@@ -406,6 +432,10 @@ select:disabled {
     }
 
     .number-column {
+        text-align: right !important;
+    }
+
+    .row-actions {
         text-align: right !important;
     }
 

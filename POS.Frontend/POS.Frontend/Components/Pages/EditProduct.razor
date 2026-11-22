@@ -1,0 +1,256 @@
+@page "/products/new"
+@page "/products/edit/{Id:int}"
+@implements IDisposable
+
+<PageTitle>@(Id.HasValue ? "Edit product" : "New product")</PageTitle>
+
+<div class="product-form-page">
+    <a class="back-link" href="/products">
+        <span aria-hidden="true">←</span>
+        Back to products
+    </a>
+
+    <header class="page-heading">
+        <h1>@(Id.HasValue ? "Edit product" : "New product")</h1>
+        <p>@(Id.HasValue ? "Update the product and inventory details." : "Add a product to the inventory catalog.")</p>
+    </header>
+
+    @if (isLoading)
+    {
+        <section class="state-card" role="status" aria-live="polite">
+            <span class="loading-spinner" aria-hidden="true"></span>
+            <span>Loading product...</span>
+        </section>
+    }
+    else if (!isReady)
+    {
+        <div class="alert-message error" role="alert">
+            <span>@errorMessage</span>
+            <button type="button" class="text-button" @onclick="LoadAsync">Try again</button>
+        </div>
+    }
+    else
+    {
+        @if (errorMessage is not null)
+        {
+            <div class="alert-message error" role="alert">@errorMessage</div>
+        }
+
+        <section class="form-card">
+            <EditForm Model="model" OnValidSubmit="SaveAsync" FormName="product-form" class="product-form">
+                <DataAnnotationsValidator />
+
+                <div class="form-introduction">
+                    <h2>Product details</h2>
+                    <p>Enter the catalog information, price, and current stock levels.</p>
+                </div>
+
+                <div class="form-grid">
+                    <div class="form-field full-width">
+                        <label for="product-name">Product name</label>
+                        <InputText id="product-name"
+                                   class="form-input"
+                                   autocomplete="off"
+                                   maxlength="100"
+                                   placeholder="For example, Myanmar Tea Mix"
+                                   disabled="@isSaving"
+                                   @bind-Value="model.Name" />
+                        <ValidationMessage For="@(() => model.Name)" class="field-error" />
+                    </div>
+
+                    <div class="form-field">
+                        <label for="product-code">Product code</label>
+                        <InputText id="product-code"
+                                   class="form-input"
+                                   autocomplete="off"
+                                   maxlength="10"
+                                   placeholder="For example, DRK001"
+                                   disabled="@isSaving"
+                                   @bind-Value="model.Code" />
+                        <ValidationMessage For="@(() => model.Code)" class="field-error" />
+                    </div>
+
+                    <div class="form-field">
+                        <label for="product-category">Category</label>
+                        <InputSelect id="product-category"
+                                     class="form-input"
+                                     disabled="@isSaving"
+                                     @bind-Value="model.CategoryId">
+                            <option value="">Uncategorized</option>
+                            @foreach (var category in categories)
+                            {
+                                <option value="@category.Id">@category.Name</option>
+                            }
+                        </InputSelect>
+                        <ValidationMessage For="@(() => model.CategoryId)" class="field-error" />
+                    </div>
+
+                    <div class="form-field">
+                        <label for="product-price">Price (MMK)</label>
+                        <InputNumber id="product-price"
+                                     class="form-input"
+                                     min="0"
+                                     max="99999999.99"
+                                     step="0.01"
+                                     disabled="@isSaving"
+                                     @bind-Value="model.Price" />
+                        <ValidationMessage For="@(() => model.Price)" class="field-error" />
+                    </div>
+
+                    <div class="form-field">
+                        <label for="product-stock">Stock quantity</label>
+                        <InputNumber id="product-stock"
+                                     class="form-input"
+                                     min="0"
+                                     disabled="@isSaving"
+                                     @bind-Value="model.StockQuantity" />
+                        <ValidationMessage For="@(() => model.StockQuantity)" class="field-error" />
+                    </div>
+
+                    <div class="form-field">
+                        <label for="product-reorder">Reorder level</label>
+                        <InputNumber id="product-reorder"
+                                     class="form-input"
+                                     min="0"
+                                     disabled="@isSaving"
+                                     @bind-Value="model.ReorderLevel" />
+                        <ValidationMessage For="@(() => model.ReorderLevel)" class="field-error" />
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <a class="secondary-action" href="/products">Cancel</a>
+                    <button type="submit" class="primary-action" disabled="@isSaving">
+                        @(isSaving ? "Saving..." : "Save product")
+                    </button>
+                </div>
+            </EditForm>
+        </section>
+    }
+</div>
+
+@code {
+    private readonly CancellationTokenSource cancellationTokenSource = new();
+    private ProductFormModel model = new();
+    private List<CategoryModel> categories = [];
+    private string? errorMessage;
+    private bool isLoading = true;
+    private bool isReady;
+    private bool isSaving;
+
+    [Parameter]
+    public int? Id { get; set; }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await LoadAsync();
+            StateHasChanged();
+        }
+    }
+
+    private async Task LoadAsync()
+    {
+        isLoading = true;
+        isReady = false;
+        errorMessage = null;
+        model = new ProductFormModel();
+
+        try
+        {
+            var categoriesResult = await CategoriesClient.GetCategoriesAsync(
+                cancellationTokenSource.Token);
+
+            if (!categoriesResult.IsSuccess)
+            {
+                errorMessage = categoriesResult.Message;
+                return;
+            }
+
+            categories = categoriesResult.Data ?? [];
+
+            if (Id.HasValue)
+            {
+                var productResult = await ProductsClient.GetProductAsync(
+                    Id.Value,
+                    cancellationTokenSource.Token);
+
+                if (!productResult.IsSuccess)
+                {
+                    errorMessage = productResult.Message;
+                    return;
+                }
+
+                if (productResult.Data is null)
+                {
+                    errorMessage = "The API returned the product without data.";
+                    return;
+                }
+
+                model.Name = productResult.Data.Name;
+                model.Code = productResult.Data.Code;
+                model.CategoryId = productResult.Data.CategoryId;
+                model.Price = productResult.Data.Price;
+                model.StockQuantity = productResult.Data.StockQuantity;
+                model.ReorderLevel = productResult.Data.ReorderLevel;
+            }
+
+            isReady = true;
+        }
+        catch (ApiException exception)
+        {
+            errorMessage = exception.Message;
+        }
+        catch (OperationCanceledException) when (cancellationTokenSource.IsCancellationRequested)
+        {
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task SaveAsync()
+    {
+        isSaving = true;
+        errorMessage = null;
+
+        try
+        {
+            var result = Id.HasValue
+                ? await ProductsClient.UpdateProductAsync(
+                    Id.Value,
+                    model,
+                    cancellationTokenSource.Token)
+                : await ProductsClient.CreateProductAsync(
+                    model,
+                    cancellationTokenSource.Token);
+
+            if (!result.IsSuccess)
+            {
+                errorMessage = result.Message;
+                return;
+            }
+
+            Navigation.NavigateTo("/products");
+        }
+        catch (ApiException exception)
+        {
+            errorMessage = exception.Message;
+        }
+        catch (OperationCanceledException) when (cancellationTokenSource.IsCancellationRequested)
+        {
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+
+    public void Dispose()
+    {
+        cancellationTokenSource.Cancel();
+        cancellationTokenSource.Dispose();
+    }
+}
