@@ -1,6 +1,6 @@
 namespace POS.Frontend.Models;
 
-public class ProductModel
+public class ProductResponseModel
 {
     public int Id { get; set; }
 

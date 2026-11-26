@@ -24,7 +24,8 @@
                        placeholder="Search by name or code"
                        maxlength="100"
                        disabled="@isLoading"
-                       @bind="query.Search" />
+                       value="@param.Search"
+                       @oninput="SearchChangedAsync" />
                 <button type="submit" class="primary-action" disabled="@isLoading">Search</button>
             </div>
         </form>
@@ -33,7 +34,7 @@
             <label for="category-filter">Category</label>
             <select id="category-filter"
                     disabled="@isLoading"
-                    @bind="query.CategoryId"
+                    @bind="param.CategoryId"
                     @bind:after="FiltersChangedAsync">
                 <option value="">All categories</option>
                 @foreach (var category in categories)
@@ -48,7 +49,7 @@
             <div class="sort-control">
                 <select id="sort-field"
                         disabled="@isLoading"
-                        @bind="query.SortBy"
+                        @bind="param.SortBy"
                         @bind:after="FiltersChangedAsync">
                     <option value="name">Name</option>
                     <option value="code">Code</option>
@@ -60,9 +61,9 @@
                 <button type="button"
                         class="sort-direction"
                         disabled="@isLoading"
-                        title="@(query.SortDescending ? "Descending" : "Ascending")"
+                        title="@(param.SortDescending ? "Descending" : "Ascending")"
                         @onclick="ToggleSortDirectionAsync">
-                    @(query.SortDescending ? "↓" : "↑")
+                    @(param.SortDescending ? "↓" : "↑")
                 </button>
             </div>
         </div>
@@ -70,7 +71,7 @@
         <label class="checkbox-control">
             <input type="checkbox"
                    disabled="@isLoading"
-                   @bind="query.LowStockOnly"
+                   @bind="param.LowStockOnly"
                    @bind:after="FiltersChangedAsync" />
             <span>Low stock only</span>
         </label>
@@ -123,7 +124,7 @@
                     <label for="page-size">Rows</label>
                     <select id="page-size"
                             disabled="@isLoading"
-                            @bind="query.PageSize"
+                            @bind="param.PageSize"
                             @bind:after="PageSizeChangedAsync">
                         <option value="5">5</option>
                         <option value="10">10</option>
@@ -142,6 +143,7 @@
                             <th scope="col" class="number-column">Price</th>
                             <th scope="col" class="number-column">Stock</th>
                             <th scope="col" class="number-column">Reorder level</th>
+                            <th scope="col">Status</th>
                             <th scope="col" class="actions-column">Actions</th>
                         </tr>
                     </thead>
@@ -157,8 +159,24 @@
                                 <td data-label="Price" class="number-column">@product.Price.ToString("N2")</td>
                                 <td data-label="Stock" class="number-column">@product.StockQuantity</td>
                                 <td data-label="Reorder level" class="number-column">@product.ReorderLevel</td>
+                                <td data-label="Status">
+                                    @if (product.IsLowStock)
+                                    {
+                                        <span class="low-stock-badge">Low stock</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="in-stock-text">In stock</span>
+                                    }
+                                </td>
                                 <td data-label="Actions" class="row-actions">
                                     <a class="text-button" href="@($"/products/edit/{product.Id}")">Edit</a>
+                                    <button type="button"
+                                            class="text-button danger"
+                                            disabled="@isDeleting"
+                                            @onclick="() => ConfirmDelete(product)">
+                                        Delete
+                                    </button>
                                 </td>
                             </tr>
                         }
@@ -185,18 +203,60 @@
     }
 </div>
 
+@if (productPendingDelete is not null)
+{
+    <div class="dialog-backdrop" role="presentation" @onclick="CancelDelete">
+        <section class="confirm-dialog"
+                 role="dialog"
+                 aria-modal="true"
+                 @onclick:stopPropagation="true">
+            <div class="dialog-heading">
+                <h2>Delete product?</h2>
+                <button type="button"
+                        class="close-button"
+                        title="Close"
+                        disabled="@isDeleting"
+                        @onclick="CancelDelete">
+                    ×
+                </button>
+            </div>
+
+            <p>Delete <strong>@productPendingDelete.Name</strong>?</p>
+            <p class="dialog-note">A product used in a sale cannot be deleted.</p>
+
+            @if (deleteErrorMessage is not null)
+            {
+                <div class="alert-message error dialog-error" role="alert">@deleteErrorMessage</div>
+            }
+
+            <div class="dialog-actions">
+                <button type="button" class="secondary-action" disabled="@isDeleting" @onclick="CancelDelete">
+                    Cancel
+                </button>
+                <button type="button" class="danger-action" disabled="@isDeleting" @onclick="DeleteProductAsync">
+                    @(isDeleting ? "Deleting..." : "Delete")
+                </button>
+            </div>
+        </section>
+    </div>
+}
+
 @code {
     private readonly CancellationTokenSource cancellationTokenSource = new();
-    private readonly ProductQueryModel query = new();
-    private PagedResult<ProductModel> productsPage = new();
+    private readonly ProductParamModel param = new();
+    private CancellationTokenSource? searchCancellationTokenSource;
+    private PagedResult<ProductResponseModel> productsPage = new();
     private List<CategoryModel> categories = [];
+    private ProductResponseModel? productPendingDelete;
     private string? errorMessage;
+    private string? deleteErrorMessage;
     private bool isLoading = true;
+    private bool isDeleting;
 
     private bool HasActiveFilters =>
-        !string.IsNullOrWhiteSpace(query.Search) ||
-        query.CategoryId.HasValue ||
-        query.LowStockOnly;
+        !string.IsNullOrWhiteSpace(param.Search) ||
+        param.CategoryId.HasValue ||
+        param.LowStockOnly;
 
     private int FirstItemNumber => productsPage.TotalCount == 0
         ? 0
@@ -223,7 +283,7 @@
         try
         {
             var categoriesTask = CategoriesClient.GetCategoriesAsync(cancellationTokenSource.Token);
-            var productsTask = ProductsClient.GetProductsPagingAsync(query, cancellationTokenSource.Token);
+            var productsTask = ProductsClient.GetProductsPagingAsync(param, cancellationTokenSource.Token);
 
             await Task.WhenAll(categoriesTask, productsTask);
 
@@ -258,7 +318,10 @@
         }
     }
 
-    private async Task LoadProductsAsync()
+    private Task LoadProductsAsync() =>
+        LoadProductsAsync(cancellationTokenSource.Token);
+
+    private async Task LoadProductsAsync(CancellationToken cancellationToken)
     {
         isLoading = true;
         errorMessage = null;
@@ -266,8 +329,8 @@
         try
         {
             var result = await ProductsClient.GetProductsPagingAsync(
-                query,
-                cancellationTokenSource.Token);
+                param,
+                cancellationToken);
 
             if (!result.IsSuccess)
             {
@@ -281,7 +344,7 @@
         {
             errorMessage = exception.Message;
         }
-        catch (OperationCanceledException) when (cancellationTokenSource.IsCancellationRequested)
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
         }
         finally
@@ -292,64 +355,154 @@
 
     private async Task ApplySearchAsync()
     {
-        query.Page = 1;
+        CancelDebouncedSearch();
+        param.Page = 1;
         await LoadProductsAsync();
+    }
+
+    private async Task SearchChangedAsync(ChangeEventArgs eventArgs)
+    {
+        param.Search = eventArgs.Value?.ToString();
+        CancelDebouncedSearch();
+
+        searchCancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(
+            cancellationTokenSource.Token);
+        var cancellationToken = searchCancellationTokenSource.Token;
+
+        try
+        {
+            // If the token is not cancelled, wait 400 ms and then continue to the next line.
+            // If the token is cancelled during those 400 ms, immediately stop waiting and throw OperationCanceledException.
+            await Task.Delay(400, cancellationToken);
+            param.Page = 1;
+            await LoadProductsAsync(cancellationToken);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+        }
     }
 
     private async Task FiltersChangedAsync()
     {
-        query.Page = 1;
+        param.Page = 1;
         await LoadProductsAsync();
     }
 
     private async Task ToggleSortDirectionAsync()
     {
-        query.SortDescending = !query.SortDescending;
-        query.Page = 1;
+        param.SortDescending = !param.SortDescending;
+        param.Page = 1;
         await LoadProductsAsync();
     }
 
     private async Task PageSizeChangedAsync()
     {
-        query.Page = 1;
+        param.Page = 1;
         await LoadProductsAsync();
     }
 
     private async Task ResetFiltersAsync()
     {
-        query.Search = null;
-        query.CategoryId = null;
-        query.LowStockOnly = false;
-        query.SortBy = "name";
-        query.SortDescending = false;
-        query.Page = 1;
+        CancelDebouncedSearch();
+        param.Search = null;
+        param.CategoryId = null;
+        param.LowStockOnly = false;
+        param.SortBy = "name";
+        param.SortDescending = false;
+        param.Page = 1;
         await LoadProductsAsync();
     }
 
-    private async Task PreviousPageAsync()
+    private void ConfirmDelete(ProductResponseModel product)
     {
-        if (query.Page <= 1)
+        productPendingDelete = product;
+        deleteErrorMessage = null;
+    }
+
+    private void CancelDelete()
+    {
+        if (!isDeleting)
+        {
+            productPendingDelete = null;
+            deleteErrorMessage = null;
+        }
+    }
+
+    private async Task DeleteProductAsync()
+    {
+        if (productPendingDelete is null)
         {
             return;
         }
 
-        query.Page--;
+        isDeleting = true;
+        deleteErrorMessage = null;
+
+        try
+        {
+            var result = await ProductsClient.DeleteProductAsync(
+                productPendingDelete.Id,
+                cancellationTokenSource.Token);
+
+            if (!result.IsSuccess)
+            {
+                deleteErrorMessage = result.Message;
+                return;
+            }
+
+            if (productsPage.Items.Count == 1 && param.Page > 1)
+            {
+                param.Page--;
+            }
+
+            productPendingDelete = null;
+            await LoadProductsAsync();
+        }
+        catch (ApiException exception)
+        {
+            deleteErrorMessage = exception.Message;
+        }
+        catch (OperationCanceledException) when (cancellationTokenSource.IsCancellationRequested)
+        {
+        }
+        finally
+        {
+            isDeleting = false;
+        }
+    }
+
+    private async Task PreviousPageAsync()
+    {
+        if (param.Page <= 1)
+        {
+            return;
+        }
+
+        param.Page--;
         await LoadProductsAsync();
     }
 
     private async Task NextPageAsync()
     {
-        if (query.Page >= productsPage.TotalPages)
+        if (param.Page >= productsPage.TotalPages)
         {
             return;
         }
 
-        query.Page++;
+        param.Page++;
         await LoadProductsAsync();
+    }
+
+    private void CancelDebouncedSearch()
+    {
+        searchCancellationTokenSource?.Cancel();
+        searchCancellationTokenSource?.Dispose();
+        searchCancellationTokenSource = null;
     }
 
     public void Dispose()
     {
+        CancelDebouncedSearch();
         cancellationTokenSource.Cancel();
         cancellationTokenSource.Dispose();
     }

@@ -17,10 +17,10 @@ public class ProductController : BaseController
 
     [HttpGet]
     public async Task<IActionResult> GetProductsPagingAsync(
-        [FromQuery] ProductQueryDto query,
+        [FromQuery] ProductParamModel param,
         CancellationToken cancellationToken)
     {
-        var result = await _productService.GetProductsPagingAsync(query, cancellationToken);
+        var result = await _productService.GetProductsPagingAsync(param, cancellationToken);
         return Execute(result);
     }
 
@@ -35,7 +35,7 @@ public class ProductController : BaseController
 
     [HttpPost]
     public async Task<IActionResult> CreateProductAsync(
-        CreateProductDto product,
+        CreateProductRequestModel product,
         CancellationToken cancellationToken)
     {
         var result = await _productService.CreateProductAsync(product, cancellationToken);
@@ -54,7 +54,7 @@ public class ProductController : BaseController
     [HttpPut("{id:int}")]
     public async Task<IActionResult> UpdateProductAsync(
         int id,
-        UpdateProductDto product,
+        UpdateProductRequestModel product,
         CancellationToken cancellationToken)
     {
         var result = await _productService.UpdateProductAsync(id, product, cancellationToken);

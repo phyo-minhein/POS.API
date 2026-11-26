@@ -1,6 +1,6 @@
 namespace POS.Frontend.Models;
 
-public class ProductQueryModel
+public class ProductParamModel
 {
     public string? Search { get; set; }
 
