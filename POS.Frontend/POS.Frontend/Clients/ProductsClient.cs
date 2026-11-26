@@ -11,45 +11,45 @@ public class ProductsClient : ApiClientBase
     {
     }
 
-    public Task<Result<PagedResult<ProductResponseModel>>> GetProductsPagingAsync(
+    public Task<Result<PagedResult<ProductModel>>> GetProductsPagingAsync(
         ProductParamModel param,
         CancellationToken cancellationToken = default) =>
-        SendAsync<PagedResult<ProductResponseModel>>(
+        SendAsync<PagedResult<ProductModel>>(
             new HttpRequestMessage(HttpMethod.Get, BuildPagingUri(param)),
             cancellationToken);
 
-    public Task<Result<ProductResponseModel>> GetProductAsync(
+    public Task<Result<ProductModel>> GetProductAsync(
         int id,
         CancellationToken cancellationToken = default) =>
-        SendAsync<ProductResponseModel>(
+        SendAsync<ProductModel>(
             new HttpRequestMessage(HttpMethod.Get, $"api/products/{id}"),
             cancellationToken);
 
-    public Task<Result<ProductResponseModel>> CreateProductAsync(
-        ProductRequestModel product,
+    public Task<Result<ProductModel>> CreateProductAsync(
+        ProductFormModel product,
         CancellationToken cancellationToken = default) =>
-        SendAsync<ProductResponseModel>(
+        SendAsync<ProductModel>(
             new HttpRequestMessage(HttpMethod.Post, "api/products")
             {
                 Content = JsonContent.Create(product)
             },
             cancellationToken);
 
-    public Task<Result<ProductResponseModel>> UpdateProductAsync(
+    public Task<Result<ProductModel>> UpdateProductAsync(
         int id,
-        ProductRequestModel product,
+        ProductFormModel product,
         CancellationToken cancellationToken = default) =>
-        SendAsync<ProductResponseModel>(
+        SendAsync<ProductModel>(
             new HttpRequestMessage(HttpMethod.Put, $"api/products/{id}")
             {
                 Content = JsonContent.Create(product)
             },
             cancellationToken);
 
-    public Task<Result<ProductResponseModel>> DeleteProductAsync(
+    public Task<Result<ProductModel>> DeleteProductAsync(
         int id,
         CancellationToken cancellationToken = default) =>
-        SendAsync<ProductResponseModel>(
+        SendAsync<ProductModel>(
             new HttpRequestMessage(HttpMethod.Delete, $"api/products/{id}"),
             cancellationToken);
 

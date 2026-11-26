@@ -2,7 +2,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace POS.API.Dtos.Products;
 
-public class UpdateProductRequestModel
+public class UpdateProductRequestDto
 {
     [Required(ErrorMessage = "Product name is required.")]
     [StringLength(100, ErrorMessage = "Product name cannot exceed 100 characters.")]

@@ -245,9 +245,9 @@
     private readonly CancellationTokenSource cancellationTokenSource = new();
     private readonly ProductParamModel param = new();
     private CancellationTokenSource? searchCancellationTokenSource;
-    private PagedResult<ProductResponseModel> productsPage = new();
+    private PagedResult<ProductModel> productsPage = new();
     private List<CategoryModel> categories = [];
-    private ProductResponseModel? productPendingDelete;
+    private ProductModel? productPendingDelete;
     private string? errorMessage;
     private string? deleteErrorMessage;
     private bool isLoading = true;
@@ -413,7 +413,7 @@
         await LoadProductsAsync();
     }
 
-    private void ConfirmDelete(ProductResponseModel product)
+    private void ConfirmDelete(ProductModel product)
     {
         productPendingDelete = product;
         deleteErrorMessage = null;

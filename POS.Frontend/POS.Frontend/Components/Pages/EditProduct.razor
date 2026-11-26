@@ -131,7 +131,7 @@
 
 @code {
     private readonly CancellationTokenSource cancellationTokenSource = new();
-    private ProductRequestModel model = new();
+    private ProductFormModel model = new();
     private List<CategoryModel> categories = [];
     private string? errorMessage;
     private bool isLoading = true;
@@ -155,7 +155,7 @@
         isLoading = true;
         isReady = false;
         errorMessage = null;
-        model = new ProductRequestModel();
+        model = new ProductFormModel();
 
         try
         {

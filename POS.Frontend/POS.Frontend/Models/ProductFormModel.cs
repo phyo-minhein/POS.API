@@ -1,8 +1,8 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace POS.API.Dtos.Products;
+namespace POS.Frontend.Models;
 
-public class CreateProductRequestModel
+public class ProductFormModel
 {
     [Required(ErrorMessage = "Product name is required.")]
     [StringLength(100, ErrorMessage = "Product name cannot exceed 100 characters.")]

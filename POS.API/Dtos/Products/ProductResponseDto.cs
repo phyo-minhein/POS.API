@@ -1,6 +1,6 @@
 namespace POS.API.Dtos.Products;
 
-public class ProductResponseModel
+public class ProductResponseDto
 {
     public int Id { get; set; }
 

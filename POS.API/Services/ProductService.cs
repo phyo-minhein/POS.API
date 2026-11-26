@@ -19,8 +19,8 @@ public class ProductService
         _db = db;
     }
 
-    public async Task<Result<PagedResult<ProductResponseModel>>> GetProductsPagingAsync(
-        ProductParamModel request,
+    public async Task<Result<PagedResult<ProductResponseDto>>> GetProductsPagingAsync(
+        ProductParamDto request,
         CancellationToken cancellationToken = default)
     {
         var search = Normalize(request.Search);
@@ -35,7 +35,7 @@ public class ProductService
 
         if (validationMessage is not null)
         {
-            return Result<PagedResult<ProductResponseModel>>.ValidationError(validationMessage);
+            return Result<PagedResult<ProductResponseDto>>.ValidationError(validationMessage);
         }
 
         var query = ProductResponses();
@@ -67,7 +67,7 @@ public class ProductService
                 .Take(request.PageSize)
                 .ToListAsync(cancellationToken);
 
-        var page = new PagedResult<ProductResponseModel>
+        var page = new PagedResult<ProductResponseDto>
         {
             Items = products,
             Page = request.Page,
@@ -75,18 +75,18 @@ public class ProductService
             TotalCount = totalCount
         };
 
-        return Result<PagedResult<ProductResponseModel>>.Success(
+        return Result<PagedResult<ProductResponseDto>>.Success(
             page,
             "Products retrieved successfully.");
     }
 
-    public async Task<Result<ProductResponseModel>> GetProductAsync(
+    public async Task<Result<ProductResponseDto>> GetProductAsync(
         int id,
         CancellationToken cancellationToken = default)
     {
         if (id <= 0)
         {
-            return Result<ProductResponseModel>.ValidationError(
+            return Result<ProductResponseDto>.ValidationError(
                 "Product id must be greater than zero.");
         }
 
@@ -94,14 +94,14 @@ public class ProductService
             .FirstOrDefaultAsync(product => product.Id == id, cancellationToken);
 
         return product is null
-            ? Result<ProductResponseModel>.NotFoundError($"Product {id} does not exist.")
-            : Result<ProductResponseModel>.Success(
+            ? Result<ProductResponseDto>.NotFoundError($"Product {id} does not exist.")
+            : Result<ProductResponseDto>.Success(
                 product,
                 "Product retrieved successfully.");
     }
 
-    public async Task<Result<ProductResponseModel>> CreateProductAsync(
-        CreateProductRequestModel request,
+    public async Task<Result<ProductResponseDto>> CreateProductAsync(
+        CreateProductRequestDto request,
         CancellationToken cancellationToken = default)
     {
         var name = Normalize(request.Name);
@@ -116,18 +116,18 @@ public class ProductService
 
         if (validationMessage is not null)
         {
-            return Result<ProductResponseModel>.ValidationError(validationMessage);
+            return Result<ProductResponseDto>.ValidationError(validationMessage);
         }
 
         if (!await CategoryExistsAsync(request.CategoryId, cancellationToken))
         {
-            return Result<ProductResponseModel>.ValidationError(
+            return Result<ProductResponseDto>.ValidationError(
                 $"Category {request.CategoryId} does not exist.");
         }
 
         if (await ProductCodeExistsAsync(code, excludedProductId: null, cancellationToken))
         {
-            return Result<ProductResponseModel>.ConflictError(
+            return Result<ProductResponseDto>.ConflictError(
                 $"A product with code '{code}' already exists.");
         }
 
@@ -149,12 +149,12 @@ public class ProductService
         }
         catch (DbUpdateException exception) when (IsUniqueConstraintViolation(exception))
         {
-            return Result<ProductResponseModel>.ConflictError(
+            return Result<ProductResponseDto>.ConflictError(
                 $"A product with code '{code}' already exists.");
         }
         catch (DbUpdateException exception) when (IsForeignKeyViolation(exception))
         {
-            return Result<ProductResponseModel>.ValidationError(
+            return Result<ProductResponseDto>.ValidationError(
                 "The selected category does not exist.");
         }
 
@@ -165,23 +165,23 @@ public class ProductService
 
         if (response is null)
         {
-            return Result<ProductResponseModel>.SystemError(
+            return Result<ProductResponseDto>.SystemError(
                 "The product was created but could not be retrieved.");
         }
 
-        return Result<ProductResponseModel>.Success(
+        return Result<ProductResponseDto>.Success(
             response,
             "Product created successfully.");
     }
 
-    public async Task<Result<ProductResponseModel>> UpdateProductAsync(
+    public async Task<Result<ProductResponseDto>> UpdateProductAsync(
         int id,
-        UpdateProductRequestModel request,
+        UpdateProductRequestDto request,
         CancellationToken cancellationToken = default)
     {
         if (id <= 0)
         {
-            return Result<ProductResponseModel>.ValidationError(
+            return Result<ProductResponseDto>.ValidationError(
                 "Product id must be greater than zero.");
         }
 
@@ -197,7 +197,7 @@ public class ProductService
 
         if (validationMessage is not null)
         {
-            return Result<ProductResponseModel>.ValidationError(validationMessage);
+            return Result<ProductResponseDto>.ValidationError(validationMessage);
         }
 
         var entity = await _db.Products
@@ -205,19 +205,19 @@ public class ProductService
 
         if (entity is null)
         {
-            return Result<ProductResponseModel>.NotFoundError(
+            return Result<ProductResponseDto>.NotFoundError(
                 $"Product {id} does not exist.");
         }
 
         if (!await CategoryExistsAsync(request.CategoryId, cancellationToken))
         {
-            return Result<ProductResponseModel>.ValidationError(
+            return Result<ProductResponseDto>.ValidationError(
                 $"Category {request.CategoryId} does not exist.");
         }
 
         if (await ProductCodeExistsAsync(code, id, cancellationToken))
         {
-            return Result<ProductResponseModel>.ConflictError(
+            return Result<ProductResponseDto>.ConflictError(
                 $"A product with code '{code}' already exists.");
         }
 
@@ -234,12 +234,12 @@ public class ProductService
         }
         catch (DbUpdateException exception) when (IsUniqueConstraintViolation(exception))
         {
-            return Result<ProductResponseModel>.ConflictError(
+            return Result<ProductResponseDto>.ConflictError(
                 $"A product with code '{code}' already exists.");
         }
         catch (DbUpdateException exception) when (IsForeignKeyViolation(exception))
         {
-            return Result<ProductResponseModel>.ValidationError(
+            return Result<ProductResponseDto>.ValidationError(
                 "The selected category does not exist.");
         }
 
@@ -248,22 +248,22 @@ public class ProductService
 
         if (response is null)
         {
-            return Result<ProductResponseModel>.SystemError(
+            return Result<ProductResponseDto>.SystemError(
                 "The product was updated but could not be retrieved.");
         }
 
-        return Result<ProductResponseModel>.Success(
+        return Result<ProductResponseDto>.Success(
             response,
             "Product updated successfully.");
     }
 
-    public async Task<Result<ProductResponseModel>> DeleteProductAsync(
+    public async Task<Result<ProductResponseDto>> DeleteProductAsync(
         int id,
         CancellationToken cancellationToken = default)
     {
         if (id <= 0)
         {
-            return Result<ProductResponseModel>.ValidationError(
+            return Result<ProductResponseDto>.ValidationError(
                 "Product id must be greater than zero.");
         }
 
@@ -272,7 +272,7 @@ public class ProductService
 
         if (product is null)
         {
-            return Result<ProductResponseModel>.NotFoundError(
+            return Result<ProductResponseDto>.NotFoundError(
                 $"Product {id} does not exist.");
         }
 
@@ -282,7 +282,7 @@ public class ProductService
 
         if (isInUse)
         {
-            return Result<ProductResponseModel>.ConflictError(
+            return Result<ProductResponseDto>.ConflictError(
                 "The product cannot be deleted because it has been used in a sale.");
         }
 
@@ -294,11 +294,11 @@ public class ProductService
         }
         catch (SqlException exception) when (exception.Number == 547)
         {
-            return Result<ProductResponseModel>.ConflictError(
+            return Result<ProductResponseDto>.ConflictError(
                 "The product cannot be deleted because it has been used in a sale.");
         }
 
-        return Result<ProductResponseModel>.Success(
+        return Result<ProductResponseDto>.Success(
             product,
             "Product deleted successfully.");
     }
@@ -333,10 +333,10 @@ public class ProductService
                 cancellationToken);
     }
 
-    private IQueryable<ProductResponseModel> ProductResponses() =>
+    private IQueryable<ProductResponseDto> ProductResponses() =>
         _db.Products
             .AsNoTracking()
-            .Select(product => new ProductResponseModel
+            .Select(product => new ProductResponseDto
             {
                 Id = product.ProductId,
                 Name = product.ProductName,
@@ -349,12 +349,12 @@ public class ProductService
                 IsLowStock = product.StockQuantity <= product.ReorderLevel
             });
 
-    private static IOrderedQueryable<ProductResponseModel> OrderProducts(
-        IQueryable<ProductResponseModel> query,
+    private static IOrderedQueryable<ProductResponseDto> OrderProducts(
+        IQueryable<ProductResponseDto> query,
         string sortBy,
         bool descending)
     {
-        IOrderedQueryable<ProductResponseModel> orderedQuery = (sortBy, descending) switch
+        IOrderedQueryable<ProductResponseDto> orderedQuery = (sortBy, descending) switch
         {
             ("code", false) => query.OrderBy(product => product.Code),
             ("code", true) => query.OrderByDescending(product => product.Code),
@@ -425,7 +425,7 @@ public class ProductService
     }
 
     private static string? ValidateProductParam(
-        ProductParamModel request,
+        ProductParamDto request,
         string search,
         string sortBy)
     {

@@ -2,7 +2,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace POS.API.Dtos.Products;
 
-public class ProductParamModel
+public class ProductParamDto
 {
     [StringLength(100, ErrorMessage = "Search cannot exceed 100 characters.")]
     public string? Search { get; set; }
